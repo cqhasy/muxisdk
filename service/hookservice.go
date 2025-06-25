@@ -17,7 +17,7 @@ import (
 
 //todo 可以尝试模仿gorm的链式调用
 
-type Service struct {
+type HookService struct {
 	Oc *dao.OrmClient
 	Wb *webhook.Webhook //这是本质是缓存，真实数据始终存储在数据库中。
 }
@@ -39,21 +39,21 @@ type HookTarget struct {
 
 //new-->init-->register_from-->register_target-->curd
 
-func NewService(dsn string) *Service {
+func NewService(dsn string) *HookService {
 	o := dao.NewOrmClient(dsn)
 	wb := webhook.NewWebhook()
-	return &Service{
+	return &HookService{
 		Oc: o,
 		Wb: wb,
 	}
 }
 
-func (svc *Service) Init() {
+func (svc *HookService) Init() {
 	var f = FromHook{}
 	var hook = HookTarget{}
 	svc.Oc.InitTable(&hook, &f)
 }
-func (svc *Service) RegisterFrom(c context.Context, f string) error {
+func (svc *HookService) RegisterFrom(c context.Context, f string) error {
 	var from FromHook
 	err := svc.Oc.Get(c, &from, dao.Key{"from", f})
 	if err == nil {
@@ -66,7 +66,7 @@ func (svc *Service) RegisterFrom(c context.Context, f string) error {
 	}
 	return nil
 }
-func (svc *Service) GetFromId(c context.Context, f string) (uint, error) {
+func (svc *HookService) GetFromId(c context.Context, f string) (uint, error) {
 	var from FromHook
 	err := svc.Oc.Get(c, &from, dao.Key{"from", f})
 	if err != nil {
@@ -74,7 +74,7 @@ func (svc *Service) GetFromId(c context.Context, f string) (uint, error) {
 	}
 	return from.ID, nil
 }
-func (svc *Service) RegisterTar(c context.Context, f uint, to string) error {
+func (svc *HookService) RegisterTar(c context.Context, f uint, to string) error {
 	var from FromHook
 	err := svc.Oc.Get(c, &from, dao.Key{"id", f})
 	if err != nil {
@@ -97,7 +97,7 @@ func (svc *Service) RegisterTar(c context.Context, f uint, to string) error {
 
 //方法不支持泛型，这很坏了，为保留性能，不写interface了，强制id查询
 
-func (svc *Service) GetHook(c context.Context, f uint) ([]string, error) {
+func (svc *HookService) GetHook(c context.Context, f uint) ([]string, error) {
 	t := svc.Wb.Get(f)
 	if t == nil {
 		var hook FromHook
@@ -116,7 +116,7 @@ func (svc *Service) GetHook(c context.Context, f uint) ([]string, error) {
 	return t, nil
 }
 
-func (svc *Service) Remove(c context.Context, f uint) error {
+func (svc *HookService) Remove(c context.Context, f uint) error {
 	var hook FromHook
 	var tar HookTarget
 	var k1 = dao.Key{"id", f}
@@ -132,7 +132,7 @@ func (svc *Service) Remove(c context.Context, f uint) error {
 	svc.Wb.Remove(f)
 	return nil
 }
-func (svc *Service) Change(c context.Context, f uint, old string, new string) error {
+func (svc *HookService) Change(c context.Context, f uint, old string, new string) error {
 	var hook = HookTarget{
 		HookID: f,
 		Target: new,
@@ -144,7 +144,7 @@ func (svc *Service) Change(c context.Context, f uint, old string, new string) er
 	}
 	return nil
 }
-func (svc *Service) HookBack(t string, data HookPayload, authorization string) ([]byte, error) {
+func (svc *HookService) HookBack(t string, data HookPayload, authorization string) ([]byte, error) {
 	if data.Try > 5 {
 		return nil, errors.New("too many hooks")
 	}
