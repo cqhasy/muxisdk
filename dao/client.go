@@ -1,4 +1,4 @@
-package client
+package dao
 
 import (
 	"gorm.io/driver/mysql"
