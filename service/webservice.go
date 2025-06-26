@@ -25,11 +25,10 @@ func NewListener(engine *gin.Engine, addr string, path string, handler HandlerFu
 		path:    path,
 		handler: handler,
 	}
-	l.registerRoutes()
 	return l
 }
 
-func (l *Listener) registerRoutes() {
+func (l *Listener) RegisterRoutes() {
 	l.engine.POST(l.path, func(c *gin.Context) {
 		var payload HookPayload
 		if err := c.ShouldBindJSON(&payload); err != nil {

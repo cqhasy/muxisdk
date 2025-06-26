@@ -44,6 +44,7 @@ func isStructPtr(val any) bool {
 
 	return isPtrStruct
 }
+
 func check(val any) error {
 	ok := isStructPtr(val)
 	if !ok {
